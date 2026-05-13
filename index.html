@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevOps Learning Tracker</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #070b14; color: #e2e8f0; font-family: 'IBM Plex Mono', monospace; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    textarea:focus, input:focus { outline: 1px solid #0ea5e9 !important; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .chk:hover { border-color: #38bdf8 !important; }
+    .res-del { opacity: 0.3; transition: opacity 0.15s; }
+    .res-del:hover { opacity: 1; color: #ef4444 !important; }
+    .filter-btn { font-family: 'IBM Plex Mono', monospace; cursor: pointer; transition: all 0.15s; }
+    .filter-btn:hover { border-color: #38bdf8 !important; color: #38bdf8 !important; }
+    .card { transition: all 0.25s ease; }
+    .add-res-btn { font-family: 'IBM Plex Mono', monospace; cursor: pointer; }
+    .add-res-btn:hover { border-color: #475569 !important; color: #64748b !important; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const STORAGE_KEY = "devops-tracker-v1";
+
+const INITIAL_DATA = {
+  "Общие технические навыки": [
+    {
+      id: "gen-1",
+      title: "Языки общего назначения (Go, Java, C#)",
+      description: "Знание хотя бы одного: синтаксис, структуры данных, написание утилит",
+      resources: [
+        { label: "Go Tour (официальный)", url: "https://go.dev/tour/" },
+        { label: "Go by Example", url: "https://gobyexample.com/" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "gen-2",
+      title: "Скриптовые языки (Bash, PowerShell, Python)",
+      description: "Автоматизация, написание скриптов деплоя, обработка текста",
+      resources: [
+        { label: "Bash Guide (Greg's Wiki)", url: "https://mywiki.wooledge.org/BashGuide" },
+        { label: "Python для DevOps (O'Reilly)", url: "https://www.oreilly.com/library/view/python-for-devops/9781492057680/" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "gen-3",
+      title: "Операционные системы (Linux предпочтительно)",
+      description: "Файловая система, процессы, сети, systemd, пакетные менеджеры",
+      resources: [
+        { label: "Linux Journey", url: "https://linuxjourney.com/" },
+        { label: "The Linux Command Line (бесплатно)", url: "https://linuxcommand.org/tlcl.php" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "gen-4",
+      title: "Git — система контроля версий",
+      description: "Branching стратегии, rebase, cherry-pick, git hooks, monorepo",
+      resources: [
+        { label: "Pro Git (бесплатно, RU)", url: "https://git-scm.com/book/ru/v2" },
+        { label: "Oh My Git! (игра)", url: "https://ohmygit.org/" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "gen-5",
+      title: "Issue tracking, Agile, коммуникация команд",
+      description: "Jira/Linear, спринты, ретроспективы, работа с инженерами и бизнесом",
+      resources: [
+        { label: "Atlassian Agile Coach", url: "https://www.atlassian.com/agile" },
+      ],
+      userNotes: "", done: false,
+    },
+  ],
+  "Cloud": [
+    {
+      id: "cloud-1",
+      title: "Контейнеризация (Docker предпочтительно)",
+      description: "Dockerfile, multi-stage builds, Docker Compose, реестры, безопасность образов",
+      resources: [
+        { label: "Docker Official Docs", url: "https://docs.docker.com/get-started/" },
+        { label: "Play with Docker (лаборатория в браузере)", url: "https://labs.play-with-docker.com/" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "cloud-2",
+      title: "Оркестрация контейнеров (Kubernetes предпочтительно)",
+      description: "Pods, Deployments, Services, Ingress, RBAC, Helm, операторы",
+      resources: [
+        { label: "Kubernetes.io — официальная документация", url: "https://kubernetes.io/docs/home/" },
+        { label: "KillerCoda — интерактивные сценарии K8s", url: "https://killercoda.com/kubernetes" },
+        { label: "CKA Exam Curriculum", url: "https://github.com/cncf/curriculum" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "cloud-3",
+      title: "Создание и управление контейнерными приложениями",
+      description: "Деплой, обновления, откаты, health checks, resource limits",
+      resources: [
+        { label: "Kubernetes Patterns (O'Reilly)", url: "https://www.oreilly.com/library/view/kubernetes-patterns/9781492050278/" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "cloud-4",
+      title: "IaC: Terraform, CloudFormation, ARM",
+      description: "Terraform предпочтительно: модули, state management, workspaces, Terragrunt",
+      resources: [
+        { label: "HashiCorp Learn — Terraform", url: "https://developer.hashicorp.com/terraform/tutorials" },
+        { label: "Terraform: Up & Running (книга)", url: "https://www.terraformupandrunning.com/" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "cloud-5",
+      title: "Сетевые протоколы и принципы безопасности",
+      description: "TCP/IP, DNS, TLS/mTLS, Zero Trust, network policies в K8s",
+      resources: [
+        { label: "TechWorld with Nana (YouTube)", url: "https://www.youtube.com/@TechWorldwithNana" },
+        { label: "Computer Networking: A Top-Down Approach", url: "https://gaia.cs.umass.edu/kurose_ross/index.php" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "cloud-6",
+      title: "Firewall, VPN, load balancers, secure protocols",
+      description: "iptables/nftables, WireGuard, HAProxy/Nginx, cert-manager",
+      resources: [
+        { label: "NGINX Docs", url: "https://nginx.org/en/docs/" },
+        { label: "WireGuard QuickStart", url: "https://www.wireguard.com/quickstart/" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "cloud-7",
+      title: "Аутентификация и авторизация (OIDC, OAuth2)",
+      description: "OAuth2 flows, OIDC, JWT, Keycloak, интеграция с K8s/CI",
+      resources: [
+        { label: "OAuth 2.0 Simplified (Aaron Parecki)", url: "https://www.oauth.com/" },
+        { label: "Keycloak Documentation", url: "https://www.keycloak.org/documentation" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "cloud-8",
+      title: "Публичные облака (Azure, AWS, GCP)",
+      description: "Хотя бы одно: IAM, VPC, хранилища, managed K8s, billing",
+      resources: [
+        { label: "Microsoft Learn — Azure", url: "https://learn.microsoft.com/en-us/azure/" },
+        { label: "AWS Skill Builder (бесплатно)", url: "https://skillbuilder.aws/" },
+        { label: "Google Cloud Skills Boost", url: "https://www.cloudskillsboost.google/" },
+      ],
+      userNotes: "", done: false,
+    },
+  ],
+  "Delivery (CI/CD)": [
+    {
+      id: "cicd-1",
+      title: "CI/CD инструменты (Jenkins, GitHub Actions, Azure DevOps)",
+      description: "Pipelines, triggers, artifacts, secrets management, environments",
+      resources: [
+        { label: "GitHub Actions Docs", url: "https://docs.github.com/en/actions" },
+        { label: "Azure DevOps Pipelines Docs", url: "https://learn.microsoft.com/en-us/azure/devops/pipelines/" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "cicd-2",
+      title: "Настройка пайплайнов, интеграция репозиториев, автодеплой",
+      description: "Blue/Green, Canary, GitOps (ArgoCD/Flux), rollback стратегии",
+      resources: [
+        { label: "ArgoCD Getting Started", url: "https://argo-cd.readthedocs.io/en/stable/getting_started/" },
+        { label: "GitOps Cookbook (O'Reilly)", url: "https://www.oreilly.com/library/view/gitops-cookbook/9781492097464/" },
+      ],
+      userNotes: "", done: false,
+    },
+  ],
+  "Reliability": [
+    {
+      id: "rel-1",
+      title: "OS инструменты и troubleshooting (Linux предпочтительно)",
+      description: "strace, perf, lsof, tcpdump, journald, ядро и производительность",
+      resources: [
+        { label: "Linux Performance (Brendan Gregg)", url: "https://www.brendangregg.com/linuxperf.html" },
+        { label: "Practical Linux Forensics (книга)", url: "https://nostarch.com/practical-linux-forensics" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "rel-2",
+      title: "Инструменты мониторинга (Prometheus, Grafana, ELK, Splunk)",
+      description: "PromQL, Alertmanager, Grafana dashboards, Loki, Elastic Stack",
+      resources: [
+        { label: "Prometheus Docs", url: "https://prometheus.io/docs/introduction/overview/" },
+        { label: "Grafana Tutorials", url: "https://grafana.com/tutorials/" },
+        { label: "Elastic Learn", url: "https://www.elastic.co/learn" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "rel-3",
+      title: "Методологии мониторинга (RED, USE, Four Golden Signals)",
+      description: "SLI/SLO/SLA, error budgets, incident management, postmortem",
+      resources: [
+        { label: "Google SRE Book (бесплатно)", url: "https://sre.google/sre-book/table-of-contents/" },
+        { label: "The USE Method (Brendan Gregg)", url: "https://www.brendangregg.com/usemethod.html" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "rel-4",
+      title: "Настройка alerting систем и анализ логов",
+      description: "Alert routing, on-call rotations, log aggregation, корреляция событий",
+      resources: [
+        { label: "Alertmanager Configuration Docs", url: "https://prometheus.io/docs/alerting/latest/configuration/" },
+        { label: "OpenTelemetry Docs", url: "https://opentelemetry.io/docs/" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "rel-5",
+      title: "SQL и NoSQL базы данных",
+      description: "PostgreSQL, MySQL основы; Redis, MongoDB; индексы, транзакции",
+      resources: [
+        { label: "PostgreSQL Tutorial", url: "https://www.postgresqltutorial.com/" },
+        { label: "Redis University (бесплатно)", url: "https://university.redis.com/" },
+      ],
+      userNotes: "", done: false,
+    },
+    {
+      id: "rel-6",
+      title: "Администрирование БД, backup/restore, оптимизация",
+      description: "Репликация, sharding, connection pooling, мониторинг БД",
+      resources: [
+        { label: "PostgreSQL DBA Tutorial", url: "https://www.postgresqltutorial.com/postgresql-administration/" },
+        { label: "Percona Blog (MySQL/PostgreSQL)", url: "https://www.percona.com/blog/" },
+      ],
+      userNotes: "", done: false,
+    },
+  ],
+};
+
+const CAT_COLORS = {
+  "Общие технические навыки": "#7c3aed",
+  "Cloud": "#0ea5e9",
+  "Delivery (CI/CD)": "#f59e0b",
+  "Reliability": "#10b981",
+};
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return INITIAL_DATA;
+}
+
+function ProgressRing({ percent, size = 60, stroke = 5 }) {
+  const r = (size - stroke * 2) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (percent / 100) * circ;
+  return (
+    <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1e293b" strokeWidth={stroke} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none"
+        stroke={percent === 100 ? "#22d3ee" : "#38bdf8"} strokeWidth={stroke}
+        strokeDasharray={`${dash} ${circ - dash}`} strokeLinecap="round"
+        style={{ transition: "stroke-dasharray 0.5s ease" }}
+      />
+    </svg>
+  );
+}
+
+function SkillCard({ item, onToggle, onNoteChange, onAddResource, onRemoveResource }) {
+  const [expanded, setExpanded] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+
+  const handleAdd = () => {
+    if (newLabel.trim()) {
+      onAddResource(item.id, newLabel.trim(), newUrl.trim());
+      setNewLabel(""); setNewUrl(""); setAdding(false);
+    }
+  };
+
+  const iStyle = { background: "#1e293b", border: "1px solid #334155", borderRadius: 6, padding: "6px 10px", color: "#e2e8f0", fontSize: 12, fontFamily: "inherit", width: "100%" };
+
+  return (
+    <div className="card" style={{
+      background: item.done ? "#0a1f18" : "#0f172a",
+      border: `1px solid ${item.done ? "#064e3b" : "#1e293b"}`,
+      borderLeft: `3px solid ${item.done ? "#22d3ee" : "#334155"}`,
+      borderRadius: 10, marginBottom: 8,
+      boxShadow: item.done ? "0 0 14px #22d3ee12" : "none",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", cursor: "pointer" }}
+        onClick={() => setExpanded(e => !e)}>
+        <div className="chk" onClick={e => { e.stopPropagation(); onToggle(item.id); }}
+          style={{
+            width: 20, height: 20, borderRadius: 4, flexShrink: 0, cursor: "pointer",
+            border: `2px solid ${item.done ? "#22d3ee" : "#334155"}`,
+            background: item.done ? "#22d3ee" : "transparent",
+            display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s",
+          }}>
+          {item.done && <span style={{ color: "#0f172a", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+        </div>
+        <div style={{ flex: 1, fontSize: 13, fontWeight: 600,
+          color: item.done ? "#67e8f9" : "#e2e8f0",
+          textDecoration: item.done ? "line-through" : "none",
+          opacity: item.done ? 0.65 : 1 }}>
+          {item.title}
+        </div>
+        <span style={{ fontSize: 10, color: "#475569", marginRight: 4 }}>
+          {item.resources.length} рес.
+        </span>
+        <span style={{ color: "#334155", fontSize: 10, display: "inline-block", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
+      </div>
+
+      {expanded && (
+        <div style={{ padding: "0 16px 16px", borderTop: "1px solid #1e293b" }}>
+          <p style={{ color: "#64748b", fontSize: 12, margin: "12px 0", lineHeight: 1.65 }}>{item.description}</p>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 2, textTransform: "uppercase", marginBottom: 7 }}>Ресурсы</div>
+            {item.resources.map((r, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                {r.url
+                  ? <a href={r.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 12 }}>→ {r.label}</a>
+                  : <span style={{ color: "#64748b", fontSize: 12 }}>→ {r.label}</span>}
+                <button className="res-del" onClick={e => { e.stopPropagation(); onRemoveResource(item.id, i); }}
+                  style={{ background: "none", border: "none", color: "#475569", cursor: "pointer", fontSize: 11, padding: "0 2px" }}>✕</button>
+              </div>
+            ))}
+
+            {adding ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }} onClick={e => e.stopPropagation()}>
+                <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Название ресурса" style={iStyle} />
+                <input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="URL (необязательно)" style={iStyle} />
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={handleAdd} style={{ background: "#0ea5e9", color: "#fff", border: "none", borderRadius: 6, padding: "5px 14px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Добавить</button>
+                  <button onClick={() => setAdding(false)} style={{ background: "#1e293b", color: "#64748b", border: "1px solid #334155", borderRadius: 6, padding: "5px 14px", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Отмена</button>
+                </div>
+              </div>
+            ) : (
+              <button className="add-res-btn" onClick={e => { e.stopPropagation(); setAdding(true); }}
+                style={{ marginTop: 6, background: "transparent", border: "1px dashed #334155", borderRadius: 6, padding: "4px 12px", color: "#475569", fontSize: 11 }}>
+                + добавить ресурс
+              </button>
+            )}
+          </div>
+
+          <div>
+            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Заметки</div>
+            <textarea value={item.userNotes} onChange={e => onNoteChange(item.id, e.target.value)}
+              onClick={e => e.stopPropagation()}
+              placeholder="Свои заметки, прогресс, идеи..." rows={3}
+              style={{ width: "100%", background: "#1e293b", border: "1px solid #334155", borderRadius: 6, padding: "8px 10px", color: "#94a3b8", fontSize: 12, resize: "vertical", lineHeight: 1.6, fontFamily: "inherit" }} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App() {
+  const [data, setData] = useState(() => loadData());
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  }, [data]);
+
+  const updateAll = useCallback((fn) => setData(prev => {
+    const next = {};
+    for (const [cat, items] of Object.entries(prev)) next[cat] = fn(items);
+    return next;
+  }), []);
+
+  const toggleDone      = id => updateAll(items => items.map(i => i.id === id ? { ...i, done: !i.done } : i));
+  const changeNote      = (id, v) => updateAll(items => items.map(i => i.id === id ? { ...i, userNotes: v } : i));
+  const addResource     = (id, label, url) => updateAll(items => items.map(i => i.id === id ? { ...i, resources: [...i.resources, { label, url }] } : i));
+  const removeResource  = (id, idx) => updateAll(items => items.map(i => i.id === id ? { ...i, resources: i.resources.filter((_, k) => k !== idx) } : i));
+
+  const allItems = Object.values(data).flat();
+  const doneCount = allItems.filter(i => i.done).length;
+  const totalPct = Math.round((doneCount / allItems.length) * 100);
+
+  const filtered = Object.fromEntries(
+    Object.entries(data).map(([cat, items]) => {
+      let vis = items;
+      if (filter === "done") vis = items.filter(i => i.done);
+      if (filter === "todo") vis = items.filter(i => !i.done);
+      if (search) vis = vis.filter(i =>
+        i.title.toLowerCase().includes(search.toLowerCase()) ||
+        i.description.toLowerCase().includes(search.toLowerCase())
+      );
+      return [cat, vis];
+    }).filter(([, vis]) => vis.length > 0)
+  );
+
+  return (
+    <div style={{ minHeight: "100vh" }}>
+      {/* Header */}
+      <div style={{
+        position: "sticky", top: 0, zIndex: 10,
+        background: "linear-gradient(180deg,#0a1628 0%,#070b14 100%)",
+        borderBottom: "1px solid #1e293b", padding: "20px 24px 16px",
+      }}>
+        <div style={{ maxWidth: 860, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
+            <div>
+              <div style={{ fontSize: 10, color: "#38bdf8", letterSpacing: 3, textTransform: "uppercase", marginBottom: 4 }}>Senior DevOps Engineer</div>
+              <h1 style={{ fontSize: 20, fontWeight: 700, color: "#f1f5f9", letterSpacing: -0.5, fontFamily: "'Space Mono', monospace" }}>Learning Roadmap</h1>
+              <div style={{ fontSize: 10, color: "#22c55e", marginTop: 3 }}>● данные сохраняются автоматически</div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ position: "relative" }}>
+                <ProgressRing percent={totalPct} />
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", textAlign: "center" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#38bdf8", fontFamily: "'Space Mono', monospace" }}>{totalPct}%</div>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", fontFamily: "'Space Mono', monospace" }}>
+                  {doneCount}<span style={{ color: "#334155" }}>/{allItems.length}</span>
+                </div>
+                <div style={{ fontSize: 10, color: "#475569" }}>тем пройдено</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Category mini-bars */}
+          <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+            {Object.entries(data).map(([cat, items]) => {
+              const done = items.filter(i => i.done).length;
+              const color = CAT_COLORS[cat] || "#475569";
+              return (
+                <div key={cat} style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 8, padding: "5px 10px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 36, height: 3, background: "#1e293b", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ width: `${(done/items.length)*100}%`, height: "100%", background: color, borderRadius: 2, transition: "width 0.4s" }} />
+                  </div>
+                  <span style={{ fontSize: 10, color: "#475569" }}>{cat.split(" ")[0]}</span>
+                  <span style={{ fontSize: 10, color }}>{done}/{items.length}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "14px 24px 0" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          {[["all","Все"],["todo","Не изучено"],["done","Пройдено"]].map(([val, label]) => (
+            <button key={val} className="filter-btn" onClick={() => setFilter(val)} style={{
+              background: filter === val ? "#0ea5e9" : "#0f172a",
+              border: `1px solid ${filter === val ? "#0ea5e9" : "#1e293b"}`,
+              borderRadius: 6, padding: "5px 14px",
+              color: filter === val ? "#fff" : "#64748b",
+              fontSize: 10, textTransform: "uppercase", letterSpacing: 1,
+            }}>{label}</button>
+          ))}
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Поиск..."
+            style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 6, padding: "5px 14px", color: "#e2e8f0", fontSize: 12, fontFamily: "inherit", width: 180 }} />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "16px 24px 64px" }}>
+        {Object.keys(filtered).length === 0 && (
+          <div style={{ textAlign: "center", color: "#334155", padding: "48px 0", fontSize: 13 }}>Ничего не найдено</div>
+        )}
+        {Object.entries(filtered).map(([cat, items]) => {
+          const color = CAT_COLORS[cat] || "#475569";
+          const done = items.filter(i => i.done).length;
+          return (
+            <div key={cat} style={{ marginBottom: 28 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <span style={{
+                  background: color + "22", border: `1px solid ${color}55`, color,
+                  borderRadius: 6, padding: "2px 10px", fontSize: 10,
+                  fontWeight: 700, letterSpacing: 1, textTransform: "uppercase",
+                }}>{cat}</span>
+                <span style={{ fontSize: 10, color: "#334155" }}>{done}/{items.length}</span>
+              </div>
+              {items.map(item => (
+                <SkillCard key={item.id} item={item}
+                  onToggle={toggleDone} onNoteChange={changeNote}
+                  onAddResource={addResource} onRemoveResource={removeResource} />
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
